@@ -4,6 +4,7 @@ import math
 import random
 import sys
 
+import detection
 import actionlib
 import move_base_msgs.msg
 import rospy
@@ -81,6 +82,8 @@ class Main:
         rospy.on_shutdown(self.shutdown)
         rospy.init_node('moving')
         self.movement = Movement()
+        detector=QRDetection()
+
 
     def action(self):
         #  goal = raw_input()

@@ -1,6 +1,7 @@
 <launch>
     <include file="$(find robocops)/launch/april.launch"/>
     <include file="$(find tams_turtlebot_bringup)/launch/tams_turtlebot.launch"/>
+    <include file="$(find rpc_game_client)/launch/game_client.launch"/>
     <include file="$(find tams_turtlebot_navigation)/launch/navigation.launch">
         <arg name="map" value="$(find robocops)/map/mymap.yaml"/>
     </include>

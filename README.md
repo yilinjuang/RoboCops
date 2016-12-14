@@ -12,6 +12,9 @@ Praktikum Mobile Roboter 64-156, Wintersemester 2016/2017
 3. Move to this OSP.
 4. The target might move. Just follow.
 
+![transformation](http://i.imgur.com/HCwK6HX.jpg)
+
+
 ### After Getting Shot
 1. 5 seconds freezed
     - Scan surrounding for moving objects.

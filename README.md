@@ -20,3 +20,5 @@ Praktikum Mobile Roboter 64-156, Wintersemester 2016/2017
     - Move to optimal shooting position.
 
 ### After Shooting
+1. Move backwards out of shooting range (aprox. 5s).
+2. Move forward and fight for the points.

@@ -3,6 +3,11 @@ Praktikum Mobile Roboter 64-156, Wintersemester 2016/2017
 
 ## Strategies
 
+### Random Walk
+- Different points on map.
+- Choose the closest point from all the points which are not yet been visited.
+- Move arround between points.
+
 ### Optimize Shooting
 1. Detect an AprilTag.
 2. Calculate absolute Optimal Shooting Position (OSP) on map.
@@ -14,7 +19,6 @@ Praktikum Mobile Roboter 64-156, Wintersemester 2016/2017
 
 ![transformation](http://i.imgur.com/HCwK6HX.jpg)
 
-
 ### After Getting Shot
 1. 5 seconds freezed
     - Scan surrounding for moving objects.
@@ -23,5 +27,5 @@ Praktikum Mobile Roboter 64-156, Wintersemester 2016/2017
     - Move to optimal shooting position.
 
 ### After Shooting
-1. Move backwards out of shooting range (aprox. 5s).
+1. Move backwards out of shooting range (approx. 5s).
 2. Move forward and fight for the points.

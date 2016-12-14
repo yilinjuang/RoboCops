@@ -82,7 +82,7 @@ class Main:
         rospy.on_shutdown(self.shutdown)
         rospy.init_node('moving')
         self.movement = Movement()
-        detector=QRDetection()
+        detector = detection.QRDetection()
 
 
     def action(self):
@@ -101,4 +101,4 @@ if __name__ == '__main__':
         while True:
             main.action()
     except rospy.ROSInterruptException:
-        print "program interrupted before completion"
+        print("program interrupted before completion")

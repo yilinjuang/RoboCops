@@ -1,26 +1,29 @@
 #! /usr/bin/env python
 
+# Ref: http://mirror.umd.edu/roswiki/doc/diamondback/api/tf/html/python/tf_python.html
+
 import time
 
 import rospy
+from tf import TransformListener
 
 import detection
-import score
+import movement
 
 rospy.init_node('test', anonymous=True)
+tf = TransformListener()
 detector = detection.Detection()
-scorer = score.Score()
-f = open("data1","w+")
+mover = movement.Movement()
 
 while True:
     raw_input()
-    # if detector.detected:
-    score = scorer.send(detector.captured_image, detector.camera_info)
-    f.write(str(score) + "\n")
+
+    pose = detector.detection_data.detections[0].pose
+    frame_id = detector.detection_data.detections[0].pose.header.frame_id
     pos = detector.detection_data.detections[0].pose.pose.position
     ori = detector.detection_data.detections[0].pose.pose.orientation
-    f.write(str(pos) + "\n")
-    f.write(str(ori) + "\n\n")
-    f.flush()
-# time.sleep(0.5)
-f.close()
+
+    pose = tf.transformPose("/map", pose)
+    print(str(pose))
+
+    mover.move_to(pose.pose.position)

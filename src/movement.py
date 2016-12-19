@@ -4,9 +4,9 @@ from collections import deque
 
 import actionlib
 import rospy
-import tf
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from geometry_msgs.msg import Point, TransformStamped
+from tf import TransformListener
 
 class Map:
     def __init__(self):
@@ -28,7 +28,7 @@ class Map:
 class Movement:
     def __init__(self):
         self.map_ = Map()
-        self.tf = tf.TransformListener()
+        self.tf = TransformListener()
 
         # Last n visited locations
         self.visited = deque(self.map_.locations, 3)
@@ -36,31 +36,38 @@ class Movement:
         # MoveBaseGoal
         self.pos = MoveBaseGoal()
         self.pos.target_pose.pose.orientation.w = 1.0
-        self.pos.target_pose.header.frame_id = 'map'
+        self.pos.target_pose.header.frame_id = '/map'
 
         # SimpleActionClient
         self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
         self.client.wait_for_server()
+        self.longest_waiting_time = rospy.Duration(10)
 
-    # goal: key of Map.points
+    # goal: Point()
     # return false if failed to move to goal
     def move_to(self, goal):
-        self.pos.target_pose.pose.position = self.map_.points[goal]
+        self.pos.target_pose.pose.position = goal
         self.pos.target_pose.header.stamp = rospy.Time.now()
         self.client.send_goal(self.pos)
-        return self.client.wait_for_result(rospy.Duration(10))
+        return self.client.wait_for_result(self.longest_waiting_time)
+
+    # portal: key of Map.points
+    # return false if failed to move to portal
+    def move_to_portal(self, portal):
+        goal = self.map_.points[portal]
+        return self.move_to(goal)
 
     def explore(self):
-        goal = random.choice(self.map_.locations)
-        while goal in self.visited:
-            goal = random.choice(self.map_.locations)
-        print("Explore: " + str(goal))
-        success = self.move_to(goal)
+        portal = random.choice(self.map_.locations)
+        while portal in self.visited:
+            portal = random.choice(self.map_.locations)
+        print("Explore: " + portal)
+        success = self.move_to_portal(portal)
         if not success:
             self.client.cancel_goal()
-            print("Failed to explore " + str(goal))
+            print("Failed to explore " + portal)
         else:
-            self.visited.append(goal)
+            self.visited.append(portal)
 
     def get_position(self):
         if self.tf.frameExists("/base_link") and self.tf.frameExists("/map"):

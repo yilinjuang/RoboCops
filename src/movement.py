@@ -1,16 +1,12 @@
 #! /usr/bin/env python
 
-import math
-import random
-import sys
+from collections import deque
 
-import detection
 import actionlib
-import move_base_msgs.msg
 import rospy
 import tf
+from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from geometry_msgs.msg import Point, TransformStamped
-from collections import deque
 
 class Map:
     def __init__(self):
@@ -28,6 +24,7 @@ class Map:
     def get_distance(pos1, pos2):
         return math.sqrt((pos1.x - pos2.x) ** 2 + (pos1.y - pos2.y) ** 2)
 
+
 class Movement:
     def __init__(self):
         self.map_ = Map()
@@ -37,13 +34,12 @@ class Movement:
         self.visited = deque(self.map_.locations, 3)
 
         # MoveBaseGoal
-        self.pos = move_base_msgs.msg.MoveBaseGoal()
+        self.pos = MoveBaseGoal()
         self.pos.target_pose.pose.orientation.w = 1.0
         self.pos.target_pose.header.frame_id = 'map'
 
         # SimpleActionClient
-        self.client = actionlib.SimpleActionClient('move_base',
-                move_base_msgs.msg.MoveBaseAction)
+        self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
         self.client.wait_for_server()
 
     # goal: key of Map.points
@@ -68,37 +64,11 @@ class Movement:
 
     def get_position(self):
         if self.tf.frameExists("/base_link") and self.tf.frameExists("/map"):
-            now = rospy.Time.now()
-            self.tf.waitForTransform("/base_link", "/map", now,
+            t = rospy.Time(0)
+            self.tf.waitForTransform("/base_link", "/map", t,
                     rospy.Duration(4.0))
             position, rotation = self.tf.lookupTransform("/base_link", "/map",
-                    now)
+                    t)
             return position
         else:
             print("Frame doesn't exist.")
-
-class Main:
-    def __init__(self):
-        rospy.on_shutdown(self.shutdown)
-        rospy.init_node('moving')
-        self.movement = Movement()
-        detector = detection.QRDetection()
-
-
-    def action(self):
-        #  goal = raw_input()
-        self.movement.explore()
-        #  self.movement.move_to(goal)
-        #  pos = self.movement.get_position()
-
-    def shutdown(self):
-        print("Shutdown!")
-        sys.exit()
-
-if __name__ == '__main__':
-    try:
-        main = Main()
-        while True:
-            main.action()
-    except rospy.ROSInterruptException:
-        print("program interrupted before completion")

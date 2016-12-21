@@ -4,6 +4,7 @@ from collections import deque
 
 import actionlib
 import rospy
+from std_srvs.srv import Empty
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from geometry_msgs.msg import Point, TransformStamped
 from tf import TransformListener
@@ -43,9 +44,15 @@ class Movement:
         self.client.wait_for_server()
         self.longest_waiting_time = rospy.Duration(10)
 
+        # Clear costmaps
+        rospy.wait_for_service('/move_base/clear_costmaps')
+        self.clear_costmaps = rospy.ServiceProxy('/move_base/clear_costmaps',
+                Empty)
+
     # goal: Point()
     # return false if failed to move to goal
     def move_to(self, goal):
+        self.clear_costmaps()
         self.pos.target_pose.pose.position = goal
         self.pos.target_pose.header.stamp = rospy.Time.now()
         self.client.send_goal(self.pos)

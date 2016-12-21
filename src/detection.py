@@ -61,12 +61,15 @@ class Detection:
         #  print(data)
 
     def detect(self):
+        rospy.wait_for_message("tag_detections", AprilTagDetectionArray)
         rospy.Subscriber("tag_detections", AprilTagDetectionArray, self.get_detect_data)
 
     def capture(self):
+        rospy.wait_for_message("/camera/rgb/image_color/compressed", CompressedImage)
         rospy.Subscriber("/camera/rgb/image_color/compressed", CompressedImage, self.get_capture_data)
 
     def info(self):
+        rospy.wait_for_message("/camera/rgb/camera_info", CameraInfo)
         rospy.Subscriber("/camera/rgb/camera_info", CameraInfo, self.get_camera_info)
 
 if __name__ == '__main__':

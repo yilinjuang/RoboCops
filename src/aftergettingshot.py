@@ -13,13 +13,15 @@ class AfterGettingShot:
         self.laser_data = np.zeros(681, dtype=np.float32)
 
     def callback(self, data):
-        laser_data = np.asarray(data.ranges, dtype=np.float32)
-        print(data.ranges)
-        print(laser_data)
+       # laser_data = np.asarray(data.ranges, dtype=np.float32)
+       # print(data.ranges)
+       # print(laser_data)
+        data.ranges = []
+        print(data)
         # TODO: deal with inf and nan
-        if np.isclose(laser_data, self.laser_data, rtol=0.0, atol=0.1,
-                equal_nan=True):
-            print("Different!")
+       # if np.isclose(laser_data, self.laser_data, rtol=0.0, atol=0.1,
+        #        equal_nan=True):
+        #    print("Different!")
             # TODO: transform laser data to point cloud with laser_geometry.
             # Take the points by their indices.
             # Convert point cloud2 to XYZ and transform from /laser_link to /map.

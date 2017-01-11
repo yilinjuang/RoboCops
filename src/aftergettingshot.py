@@ -22,8 +22,12 @@ class AfterGettingShot:
             self.laser_data=laser_data
             initflag=false
             return
-        poi = np.flatnonzero(data.ranges - laser_data)
+        for value in np.absolute(data.ranges-laser_data):
+            if value<=0.03:
+                value=0.0
 
+        #poi = np.flatnonzero(data.ranges - laser_data)
+        #for value in poi:
        # print(data.ranges)
        # print(laser_data)
         # TODO: deal with inf and nan

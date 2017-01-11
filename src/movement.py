@@ -6,7 +6,7 @@ import actionlib
 import rospy
 from std_srvs.srv import Empty
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
-from geometry_msgs.msg import Point, TransformStamped
+from geometry_msgs.msg import Point, TransformStamped, Twist
 from tf import TransformListener
 
 class Map:
@@ -49,6 +49,17 @@ class Movement:
         self.clear_costmaps = rospy.ServiceProxy('/move_base/clear_costmaps',
                 Empty)
 
+        # Motor availability
+        # TODO
+
+        # Teleop
+        self.teleop = rospy.Publisher('/cmd_vel_mux/input/teleop', Twist, queue_size=1)
+        self.TELEOP_X_MAX = 0.4
+        self.TELEOP_X_SCALE = 1.0
+        self.TELEOP_Z_MAX = 1.3
+        self.TELEOP_Z_SCALE = 0.6
+        self.TELEOP_SPEED = 0.8
+
     # goal: Point()
     # return false if failed to move to goal
     def move_to(self, goal):
@@ -75,6 +86,23 @@ class Movement:
             print("Failed to explore " + portal)
         else:
             self.visited.append(portal)
+
+    def follow(self, pos):
+        teleop_cmd = Twist()
+        # No rotate if tag is in the middle.
+        if abs(pos.x) < 0.1:
+            teleop_cmd.angular.z = 0.0
+        else:
+            teleop_cmd.angular.z = -1 * pos.x / self.TELEOP_X_MAX * \
+                    self.TELEOP_X_SCALE * self.TELEOP_SPEED
+        # Break if too close.
+        if pos.z < 0.4:
+            teleop_cmd.linear.x = 0.0
+        else:
+            teleop_cmd.linear.x = pos.z / self.TELEOP_Z_MAX * \
+                    self.TELEOP_Z_SCALE * self.TELEOP_SPEED
+        print("Follow: " + str(teleop_cmd))
+        self.teleop.publish(teleop_cmd)
 
     def get_position(self):
         if self.tf.frameExists("/base_link") and self.tf.frameExists("/map"):

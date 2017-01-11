@@ -11,13 +11,21 @@ from sensor_msgs import point_cloud2
 class AfterGettingShot:
     def __init__(self):
         self.laser_data = np.zeros(681, dtype=np.float32)
+        self.initflag=true
+        self.poi = np.zeros(681, dtype=np.float32)
 
     def callback(self, data):
-       # laser_data = np.asarray(data.ranges, dtype=np.float32)
+        laser_data = np.asarray(data.ranges, dtype=np.float32)
+        laser_data[isnan(laser_data)]=0.0
+        laser_data[isinf(laser_data)]=1000.0
+        if initflag:
+            self.laser_data=laser_data
+            initflag=false
+            return
+        poi = np.flatnonzero(data.ranges - laser_data)
+
        # print(data.ranges)
        # print(laser_data)
-        data.ranges = []
-        print(data)
         # TODO: deal with inf and nan
        # if np.isclose(laser_data, self.laser_data, rtol=0.0, atol=0.1,
         #        equal_nan=True):
@@ -28,6 +36,7 @@ class AfterGettingShot:
 
     def scanForObjects(self):
         rospy.Subscriber("/laser_scan",LaserScan,self.callback)
+
 
     def transform(self, laser_data):
         lp=laser_geometry.LaserProjection()

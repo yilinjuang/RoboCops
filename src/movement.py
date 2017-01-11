@@ -4,9 +4,10 @@ from collections import deque
 
 import actionlib
 import rospy
-from std_srvs.srv import Empty
-from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from geometry_msgs.msg import Point, TransformStamped, Twist
+from kobuki_msgs.msg import MotorPower
+from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from std_srvs.srv import Empty
 from tf import TransformListener
 
 class Map:
@@ -49,11 +50,14 @@ class Movement:
         self.clear_costmaps = rospy.ServiceProxy('/move_base/clear_costmaps',
                 Empty)
 
-        # Motor availability
-        # TODO
+        # Register listener for motor availability.
+        rospy.wait_for_message("/mobile_base/commands/motor_power", MotorPower)
+        rospy.Subscriber("/mobile_base/commands/motor_power", MotorPower,
+                self.get_motor_info)
 
         # Teleop
-        self.teleop = rospy.Publisher('/cmd_vel_mux/input/teleop', Twist, queue_size=1)
+        self.teleop = rospy.Publisher('/cmd_vel_mux/input/teleop', Twist,
+                queue_size=1)
         self.TELEOP_X_MAX = 0.4
         self.TELEOP_X_SCALE = 1.0
         self.TELEOP_Z_MAX = 1.3
@@ -114,3 +118,17 @@ class Movement:
             return position
         else:
             print("Frame doesn't exist.")
+
+    def get_motor_info(self, data):
+        """Callback function of subscriber.
+
+        Args:
+            data (MotorPower)
+
+        """
+        # print("Got motor info!")
+        if data.state == MotorPower.ON:
+            self.disabled = False
+        else:
+            self.disabled = True
+        # print(data)

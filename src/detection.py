@@ -17,10 +17,17 @@ class Detection:
         self.best_idx = -1
         self.best_position = Point()
 
-        # Register listeners.
-        self.detect()
-        self.capture()
-        self.info()
+        # Register listener for detection.
+        rospy.wait_for_message("tag_detections", AprilTagDetectionArray)
+        rospy.Subscriber("tag_detections", AprilTagDetectionArray, self.get_detect_data)
+
+        # Register listener for capture.
+        rospy.wait_for_message("/camera/rgb/image_color/compressed", CompressedImage)
+        rospy.Subscriber("/camera/rgb/image_color/compressed", CompressedImage, self.get_capture_data)
+
+        # Register listener for camera info.
+        rospy.wait_for_message("/camera/rgb/camera_info", CameraInfo)
+        rospy.Subscriber("/camera/rgb/camera_info", CameraInfo, self.get_camera_info)
 
     def estimate_score(self):
         """Estimate score of the detected tag |self.detection_data|.
@@ -78,7 +85,7 @@ class Detection:
         self.best_position = best_position
 
     def get_detect_data(self, data):
-        """Callback function of detect().
+        """Callback function of subscriber.
 
         Args:
             data (AprilTagDetectionArray)
@@ -86,17 +93,16 @@ class Detection:
         """
         self.detected = False
         if data.detections:
-            # TODO: multiple detections
             if len(data.detections) > 1:
-                print("Multiple detections!")
-
-            print("Detected!")
+                print("Detected! (multiple)!")
+            else:
+                print("Detected!")
             self.detected = True
             self.detection_data = data.detections
             self.estimate_score()
 
     def get_capture_data(self, data):
-        """Callback function of capture().
+        """Callback function of subscriber.
 
         Args:
             data (CompressedImage)
@@ -108,7 +114,7 @@ class Detection:
         #  print(data.data[:10])
 
     def get_camera_info(self, data):
-        """Callback function of info().
+        """Callback function of subscriber.
 
         Args:
             data (CameraInfo)
@@ -118,17 +124,6 @@ class Detection:
         self.camera_info = data
         #  print(data)
 
-    def detect(self):
-        rospy.wait_for_message("tag_detections", AprilTagDetectionArray)
-        rospy.Subscriber("tag_detections", AprilTagDetectionArray, self.get_detect_data)
-
-    def capture(self):
-        rospy.wait_for_message("/camera/rgb/image_color/compressed", CompressedImage)
-        rospy.Subscriber("/camera/rgb/image_color/compressed", CompressedImage, self.get_capture_data)
-
-    def info(self):
-        rospy.wait_for_message("/camera/rgb/camera_info", CameraInfo)
-        rospy.Subscriber("/camera/rgb/camera_info", CameraInfo, self.get_camera_info)
 
 if __name__ == '__main__':
     rospy.init_node('detection', anonymous=True)

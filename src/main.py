@@ -28,6 +28,12 @@ class Main:
         pos = self.mover.get_position()
         print("Position: " + pos)
 
+        if self.mover.disabled:
+            # After getting shot!
+            print("===AfterGettingShot===")
+            # TODO
+            return
+
         if not self.detector.detected:
             # Explore!
             print("===Explore===")

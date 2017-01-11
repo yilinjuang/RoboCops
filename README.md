@@ -26,6 +26,7 @@ Praktikum Mobile Roboter 64-156, Wintersemester 2016/2017
 2. After 5 seconds
     - Move to optimal shooting position.
 
-### After Shooting
-1. Move backwards out of shooting range (approx. 5s).
-2. Move forward and fight for the points.
+### After Shooting (Hide & Attack)
+1. Calculate the potential position (reachable in 5 secs) of the opponent robot and save it as area of interest (AOI).
+2. Move backwards out of AOI.
+3. Move forward and search the AOI to attach again.

@@ -17,17 +17,14 @@ class Main:
         rospy.init_node('robocops')
 
         self.mover = movement.Movement()
-        self.detector = detection.Detection()
+        self.detector = detection.Detection(self.mover)
         self.scorer = score.Score()
 
-        self.rate = rospy.Rate(10)
+        self.rate = rospy.Rate(20)
         self.TO_SHOOT_OR_NOT_TO_SHOOT = 20
         self.cool_down = timer() - 15
 
     def run(self):
-        pos = self.mover.get_position()
-        print("Position: " + pos)
-
         if self.mover.disabled:
             # After getting shot!
             print("===AfterGettingShot===")
@@ -44,6 +41,7 @@ class Main:
                 print("===CoolDown(Explore)===")
                 self.mover.explore()
             else:
+                print("Estimate score: " + str(self.detector.best_score))
                 if self.detector.best_score > self.TO_SHOOT_OR_NOT_TO_SHOOT:
                     # Shoot!
                     print("===Shoot===")
@@ -60,12 +58,14 @@ class Main:
         self.rate.sleep()
 
     def shutdown(self):
+        self.mover.abort()
         print("Shutdown!")
 
 if __name__ == '__main__':
     try:
         main = Main()
         while not rospy.is_shutdown():
+            print("Running...")
             main.run()
     except rospy.ROSInterruptException:
         print("Program interrupted before completion.")

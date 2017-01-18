@@ -5,52 +5,77 @@ import numpy as np
 import laser_geometry
 import rospy
 import tf
+from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
-from sensor_msgs import point_cloud2
+
+import movement
 
 class AfterGettingShot:
     def __init__(self):
-        self.laser_data = np.zeros(681, dtype=np.float32)
-        self.initflag=true
-        self.poi = np.zeros(681, dtype=np.float32)
+        self.mover = movement.Movement()
+        self.rate = rospy.Rate(2)
+
+        self.prev_laser_data = None
+        self.difference = None
+        self.poi = None
+        self.prev_stamp = rospy.Time.now()
+
+        self.scan_for_objects()
 
     def callback(self, data):
-        laser_data = np.asarray(data.ranges, dtype=np.float32)
-        laser_data[isnan(laser_data)]=0.0
-        laser_data[isinf(laser_data)]=1000.0
-        if initflag:
-            self.laser_data=laser_data
-            initflag=false
+        """
+        angle_min: -2.08621382713
+        angle_max: 2.08621382713
+        angle_increment: 0.00613592332229
+        """
+        # Control the rate of subscription.
+        time_stamp = data.header.stamp
+        if time_stamp - self.prev_stamp < rospy.Duration(0.1):
             return
-        for value in np.absolute(data.ranges-laser_data):
-            if value<=0.03:
-                value=0.0
+        self.prev_stamp = time_stamp
 
-        #poi = np.flatnonzero(data.ranges - laser_data)
-        #for value in poi:
-       # print(data.ranges)
-       # print(laser_data)
-        # TODO: deal with inf and nan
-       # if np.isclose(laser_data, self.laser_data, rtol=0.0, atol=0.1,
-        #        equal_nan=True):
-        #    print("Different!")
-            # TODO: transform laser data to point cloud with laser_geometry.
-            # Take the points by their indices.
-            # Convert point cloud2 to XYZ and transform from /laser_link to /map.
+        laser_data = np.asarray(data.ranges, dtype=np.float32)
+        laser_data[np.isnan(laser_data)] = 0.0
+        laser_data[np.isinf(laser_data)] = 0.0
+        if self.prev_laser_data is None:
+            self.prev_laser_data = laser_data
+            return
+        self.difference = np.absolute(laser_data - self.prev_laser_data)
+        self.difference[np.less_equal(self.difference, 0.05)] = 0.0
+        start = end = -1
+        highest_counter = 20
+        for pos, value in enumerate(self.difference):
+            if value != 0.0:
+                if start == -1:
+                    start = pos
+                end = pos
+            else:
+                if end - start > highest_counter:
+                    highest_counter = end - start
+                    self.poi = (start + end) // 2
+                start = end = -1
+        if highest_counter == 20:
+            print("No moving object!")
+        else:
+            print("POI: " + str(self.poi))
+            key = raw_input("AAA")
+            if key == "R":
+                # self.mover.rotate(1.0 * self.poi / 681)
+                self.mover.rotate(5.7)
+                self.rate.sleep()
+                self.mover.rotate(0)
+        self.mover.rotate(1)
 
-    def scanForObjects(self):
-        rospy.Subscriber("/laser_scan",LaserScan,self.callback)
+    def cb(self, data):
+        self.odom = data.pose.pose.orientation.z
+        # print(odom)
 
-
-    def transform(self, laser_data):
-        lp=laser_geometry.LaserProjection()
-        pc2=lp.projectLaser(data)
-        for point in point_cloud2.read_points(pc2):
-            print(str(point))
+    def scan_for_objects(self):
+        rospy.Subscriber("/laser_scan", LaserScan, self.callback)
+        rospy.Subscriber('/odom', Odometry, self.cb)
 
 
 if __name__ == '__main__':
     rospy.init_node('laser_scan', anonymous=True)
-    a = AfterGettingShot()
-    a.scanForObjects()
+    AfterGettingShot()
     rospy.spin()

@@ -1,9 +1,12 @@
 #! /usr/bin/env python
 
+import random
+import time
 from collections import deque
 
 import actionlib
 import rospy
+from actionlib_msgs.msg import GoalStatus
 from geometry_msgs.msg import Point, TransformStamped, Twist
 from kobuki_msgs.msg import MotorPower
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
@@ -53,7 +56,7 @@ class Movement:
         # Register listener for motor availability.
         rospy.wait_for_message("/mobile_base/commands/motor_power", MotorPower)
         rospy.Subscriber("/mobile_base/commands/motor_power", MotorPower,
-                self.get_motor_info)
+                self._get_motor_info)
 
         # Teleop
         self.teleop = rospy.Publisher('/cmd_vel_mux/input/teleop', Twist,
@@ -64,29 +67,31 @@ class Movement:
         self.TELEOP_Z_SCALE = 0.6
         self.TELEOP_SPEED = 0.8
 
+    def abort(self):
+        self.client.cancel_all_goals()
+
     # goal: Point()
-    # return false if failed to move to goal
-    def move_to(self, goal):
+    def _move_to(self, goal):
         self.clear_costmaps()
         self.pos.target_pose.pose.position = goal
         self.pos.target_pose.header.stamp = rospy.Time.now()
         self.client.send_goal(self.pos)
-        return self.client.wait_for_result(self.longest_waiting_time)
 
     # portal: key of Map.points
-    # return false if failed to move to portal
-    def move_to_portal(self, portal):
+    def _move_to_portal(self, portal):
         goal = self.map_.points[portal]
-        return self.move_to(goal)
+        self._move_to(goal)
 
     def explore(self):
         portal = random.choice(self.map_.locations)
         while portal in self.visited:
             portal = random.choice(self.map_.locations)
         print("Explore: " + portal)
-        success = self.move_to_portal(portal)
-        if not success:
-            self.client.cancel_goal()
+        self._move_to_portal(portal)
+        while self.client.get_state() == GoalStatus.PENDING or \
+                self.client.get_state() == GoalStatus.ACTIVE:
+            time.sleep(0.05)
+        if self.client.get_state() != GoalStatus.SUCCEEDED:
             print("Failed to explore " + portal)
         else:
             self.visited.append(portal)
@@ -108,6 +113,11 @@ class Movement:
         print("Follow: " + str(teleop_cmd))
         self.teleop.publish(teleop_cmd)
 
+    def rotate(self, speed):
+        teleop_cmd = Twist()
+        teleop_cmd.angular.z = speed
+        self.teleop.publish(teleop_cmd)
+
     def get_position(self):
         if self.tf.frameExists("/base_link") and self.tf.frameExists("/map"):
             t = rospy.Time(0)
@@ -119,7 +129,7 @@ class Movement:
         else:
             print("Frame doesn't exist.")
 
-    def get_motor_info(self, data):
+    def _get_motor_info(self, data):
         """Callback function of subscriber.
 
         Args:

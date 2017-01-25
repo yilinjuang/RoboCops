@@ -102,6 +102,10 @@ class Movement:
             print("Failed to explore " + portal)
         else:
             self.visited.append(portal)
+            # Do a 360-degree rotation.
+            teleop_cmd = Twist()
+            teleop_cmd.angular.z = 2.0
+            self.teleop.publish(teleop_cmd)
 
     def follow(self, pos):
         teleop_cmd = Twist()
@@ -117,7 +121,7 @@ class Movement:
         else:
             teleop_cmd.linear.x = pos.z / self.TELEOP_Z_MAX * \
                     self.TELEOP_Z_SCALE * self.TELEOP_SPEED
-        print("Follow: " + str(teleop_cmd))
+        print("Follow: distance = " + str(pos.z))
         self.teleop.publish(teleop_cmd)
 
     def rotate_to(self, target, direction):

@@ -10,25 +10,35 @@ import rospy
 import detection
 import movement
 import score
+import aftergettingshot
 
 class Main:
     def __init__(self):
         rospy.on_shutdown(self.shutdown)
         rospy.init_node('robocops')
 
-        self.mover = movement.Movement()
-        self.detector = detection.Detection(self.mover)
+        self.mover = movement.Movement(self)
+        self.detector = detection.Detection(self)
         self.scorer = score.Score()
+        self.after = aftergettingshot.AfterGettingShot(self)
 
-        self.rate = rospy.Rate(20)
+        self.rate = rospy.Rate(50)
         self.TO_SHOOT_OR_NOT_TO_SHOOT = 20
         self.cool_down = timer() - 15
+        self.prev_disabled = False
 
     def run(self):
         if self.mover.disabled:
+            # Shot!
+            if not self.prev_disabled:
+                print("===Shot...===")
+                self.prev_disabled = True
+            return
+        elif self.prev_disabled:
+            self.prev_disabled = False
             # After getting shot!
             print("===AfterGettingShot===")
-            # TODO
+            self.mover.rotate_to(self.after.target, self.after.direction)
             return
 
         if not self.detector.detected:
@@ -38,8 +48,10 @@ class Main:
         else:
             if timer() - self.cool_down < 10:
                 # After shooting!
-                print("===CoolDown(Explore)===")
-                self.mover.explore()
+                print("===CoolDown(Follow)===")
+                self.mover.follow(self.detector.best_position)
+                # print("===CoolDown(Explore)===")
+                # self.mover.explore()
             else:
                 print("Estimate score: " + str(self.detector.best_score))
                 if self.detector.best_score > self.TO_SHOOT_OR_NOT_TO_SHOOT:
@@ -65,7 +77,6 @@ if __name__ == '__main__':
     try:
         main = Main()
         while not rospy.is_shutdown():
-            print("Running...")
             main.run()
     except rospy.ROSInterruptException:
         print("Program interrupted before completion.")

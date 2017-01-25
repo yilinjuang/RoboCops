@@ -1,28 +1,28 @@
 #! /usr/bin/env python
 
 import numpy as np
+from math import pi
 
 import laser_geometry
 import rospy
 import tf
-from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 
-import movement
-
 class AfterGettingShot:
-    def __init__(self):
-        self.mover = movement.Movement()
-        self.rate = rospy.Rate(2)
+    def __init__(self, main=None):
+        self.main = main
 
         self.prev_laser_data = None
         self.difference = None
         self.poi = None
+        self.target = None
+        self.direction = None
         self.prev_stamp = rospy.Time.now()
 
-        self.scan_for_objects()
+        # Register listener for laser scan.
+        rospy.Subscriber("/laser_scan", LaserScan, self._get_laser_data)
 
-    def callback(self, data):
+    def _get_laser_data(self, data):
         """
         angle_min: -2.08621382713
         angle_max: 2.08621382713
@@ -55,27 +55,30 @@ class AfterGettingShot:
                     self.poi = (start + end) // 2
                 start = end = -1
         if highest_counter == 20:
-            print("No moving object!")
+            # print("No moving object!")
+            pass
         else:
-            print("POI: " + str(self.poi))
-            key = raw_input("AAA")
-            if key == "R":
-                # self.mover.rotate(1.0 * self.poi / 681)
-                self.mover.rotate(5.7)
-                self.rate.sleep()
-                self.mover.rotate(0)
-        self.mover.rotate(1)
-
-    def cb(self, data):
-        self.odom = data.pose.pose.orientation.z
-        # print(odom)
-
-    def scan_for_objects(self):
-        rospy.Subscriber("/laser_scan", LaserScan, self.callback)
-        rospy.Subscriber('/odom', Odometry, self.cb)
+            # print("POI: " + str(self.poi))
+            d_odom = (self.poi * 0.00613592332229 - 2.08621382713) / pi
+            if d_odom < 0.0:
+                d_odom += 1.0
+                direction = 1.0
+            else:
+                d_odom -= 1.0
+                direction = -1.0
+            if self.main:
+                target_odom = self.main.mover.odom + d_odom
+            else:
+                target_odom = d_odom
+            if target_odom > 1.0:
+                target_odom -= 2
+            elif target_odom < -1.0:
+                target_odom += 2
+            self.target = target_odom
+            self.direction = direction
 
 
 if __name__ == '__main__':
-    rospy.init_node('laser_scan', anonymous=True)
-    AfterGettingShot()
+    rospy.init_node('aftergettingshot', anonymous=True)
+    a = AfterGettingShot()
     rospy.spin()

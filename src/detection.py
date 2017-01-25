@@ -7,9 +7,8 @@ from geometry_msgs.msg import Point
 from sensor_msgs.msg import CameraInfo, CompressedImage
 
 class Detection:
-    def __init__(self, mover):
-        # Reference to mover.
-        self.mover = mover
+    def __init__(self, main=None):
+        self.main = main
 
         self.detected = False
         self.captured_image = CompressedImage()
@@ -103,7 +102,8 @@ class Detection:
             self.detected = True
             self.detection_data = data.detections
             self.estimate_score()
-            self.mover.abort()
+            if self.main:
+                self.main.mover.abort()
 
     def get_capture_data(self, data):
         """Callback function of subscriber.

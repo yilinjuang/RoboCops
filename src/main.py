@@ -23,7 +23,7 @@ class Main:
         self.after = aftergettingshot.AfterGettingShot(self)
 
         self.rate = rospy.Rate(50)
-        self.TO_SHOOT_OR_NOT_TO_SHOOT = 20
+        self.TO_SHOOT_OR_NOT_TO_SHOOT = 15
         self.cool_down = timer() - 15
         self.prev_disabled = False
 
